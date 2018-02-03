@@ -3,6 +3,7 @@ package amidst.mojangapi.file;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URLClassLoader;
+import java.util.Optional;
 
 import amidst.documentation.Immutable;
 import amidst.mojangapi.file.directory.DotMinecraftDirectory;
@@ -10,6 +11,7 @@ import amidst.mojangapi.file.directory.ProfileDirectory;
 import amidst.mojangapi.file.directory.VersionDirectory;
 import amidst.mojangapi.file.json.version.VersionJson;
 import amidst.mojangapi.file.service.ClassLoaderService;
+import amidst.mojangapi.minecraftinterface.MinecraftInterface;
 
 @Immutable
 public class LauncherProfile {
@@ -20,6 +22,8 @@ public class LauncherProfile {
 	private final VersionJson versionJson;
 	private final boolean isVersionListedInProfile;
 	private final String profileName;
+	
+	private final Optional<MinecraftInterface> externalInterface;
 
 	public LauncherProfile(
 			DotMinecraftDirectory dotMinecraftDirectory,
@@ -34,6 +38,17 @@ public class LauncherProfile {
 		this.versionJson = versionJson;
 		this.isVersionListedInProfile = isVersionListedInProfile;
 		this.profileName = profileName;
+		this.externalInterface = Optional.empty();
+	}
+	
+	public LauncherProfile(MinecraftInterface externalInterface) {
+		this.externalInterface = Optional.of(externalInterface);
+		this.dotMinecraftDirectory = null;
+		this.profileDirectory = null;
+		this.versionDirectory = null;
+		this.versionJson = new VersionJson();
+		this.isVersionListedInProfile = false;
+		this.profileName = "External Connection";
 	}
 
 	public String getVersionId() {
@@ -78,5 +93,9 @@ public class LauncherProfile {
 				dotMinecraftDirectory.getLibraries(),
 				versionJson.getLibraries(),
 				versionDirectory.getJar());
+	}
+	
+	public Optional<MinecraftInterface> getExternalInterface() {
+		return externalInterface;
 	}
 }

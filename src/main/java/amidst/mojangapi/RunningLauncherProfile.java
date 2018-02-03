@@ -20,10 +20,16 @@ import amidst.mojangapi.world.WorldType;
 public class RunningLauncherProfile {
 	public static RunningLauncherProfile from(WorldBuilder worldBuilder, LauncherProfile launcherProfile)
 			throws LocalMinecraftInterfaceCreationException {
+		MinecraftInterface minecraftInterface;
+		if (launcherProfile.getExternalInterface().isPresent()) 
+			minecraftInterface = launcherProfile.getExternalInterface().get();
+		else
+			minecraftInterface = LocalMinecraftInterface.create(DefaultClassTranslator.INSTANCE.get(), launcherProfile);
+		
 		return new RunningLauncherProfile(
 				worldBuilder,
 				launcherProfile,
-				LocalMinecraftInterface.create(DefaultClassTranslator.INSTANCE.get(), launcherProfile));
+				minecraftInterface);
 	}
 
 	private final WorldBuilder worldBuilder;

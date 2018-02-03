@@ -27,6 +27,7 @@ import amidst.mojangapi.file.MinecraftInstallation;
 import amidst.mojangapi.file.PlayerInformationCache;
 import amidst.mojangapi.file.PlayerInformationProvider;
 import amidst.mojangapi.file.VersionListProvider;
+import amidst.mojangapi.minecraftinterface.MinecraftInterface;
 import amidst.mojangapi.world.SeedHistoryLogger;
 import amidst.mojangapi.world.World;
 import amidst.mojangapi.world.WorldBuilder;
@@ -86,6 +87,37 @@ public class PerApplicationInjector {
 				this::createLicenseWindow);
 	}
 
+	@CalledOnlyBy(AmidstThread.EDT)
+	public PerApplicationInjector(MinecraftInterface externalInterface, AmidstMetaData metadata, AmidstSettings settings)
+			throws DotMinecraftDirectoryNotFoundException,
+			FormatException,
+			IOException {
+		this.metadata = metadata;
+		this.settings = settings;
+		this.playerInformationProvider = new PlayerInformationCache();
+		this.seedHistoryLogger = SeedHistoryLogger.from(null);
+		this.minecraftInstallation = null;
+		this.preferredLauncherProfile = Optional.of(new LauncherProfile(externalInterface));
+		this.worldBuilder = new WorldBuilder(playerInformationProvider, seedHistoryLogger);
+		this.launcherProfileRunner = new LauncherProfileRunner(worldBuilder);
+		this.biomeProfileDirectory = BiomeProfileDirectory.create(null);
+		this.threadMaster = new ThreadMaster();
+		this.versionListProvider = VersionListProvider
+				.createLocalAndStartDownloadingRemote(threadMaster.getWorkerExecutor());
+		this.layerBuilder = new LayerBuilder();
+		this.zoom = new Zoom(settings.maxZoom);
+		this.fragmentManager = new FragmentManager(layerBuilder.getConstructors(), layerBuilder.getNumberOfLayers());
+		this.biomeSelection = new BiomeSelection();
+		this.application = new Application(
+				preferredLauncherProfile,
+				launcherProfileRunner,
+				this::createNoisyUpdatePrompt,
+				this::createSilentUpdatePrompt,
+				this::createMainWindow,
+				this::createProfileSelectWindow,
+				this::createLicenseWindow);
+		}
+	
 	@CalledOnlyBy(AmidstThread.EDT)
 	private UpdatePrompt createNoisyUpdatePrompt(MainWindowDialogs dialogs) {
 		return UpdatePrompt.from(metadata.getVersion(), threadMaster.getWorkerExecutor(), dialogs, false);
