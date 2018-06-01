@@ -13,6 +13,7 @@
 /logs
 /nbproject
 /build
+/out
 
 history.txt
 target/
