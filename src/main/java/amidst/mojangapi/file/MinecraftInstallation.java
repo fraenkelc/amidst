@@ -2,6 +2,7 @@ package amidst.mojangapi.file;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -43,12 +44,26 @@ public class MinecraftInstallation {
 		return new MinecraftInstallation(dotMinecraftDirectory);
 	}
 
+	public static MinecraftInstallation newRemoteMinecraftInstallation(String remoteUrl)
+			throws DotMinecraftDirectoryNotFoundException {
+
+		AmidstLogger.info("using remote minecraft instance");
+		return new MinecraftInstallation(remoteUrl);
+	}
+
 	private final SaveDirectoryService saveDirectoryService = new SaveDirectoryService();
 	private final DotMinecraftDirectoryService dotMinecraftDirectoryService = new DotMinecraftDirectoryService();
 	private final DotMinecraftDirectory dotMinecraftDirectory;
+	private final String remoteUrl;
 
 	public MinecraftInstallation(DotMinecraftDirectory dotMinecraftDirectory) {
 		this.dotMinecraftDirectory = dotMinecraftDirectory;
+		this.remoteUrl = null;
+	}
+
+	public MinecraftInstallation(String remoteUrl) {
+		this.dotMinecraftDirectory = null;
+		this.remoteUrl = remoteUrl;
 	}
 
 	public List<LauncherProfile> readInstalledVersionsAsLauncherProfiles() throws FormatException, IOException {
@@ -61,13 +76,15 @@ public class MinecraftInstallation {
 	}
 
 	public List<UnresolvedLauncherProfile> readLauncherProfiles() throws FormatException, IOException {
-		return dotMinecraftDirectoryService
-				.readLauncherProfilesFrom(dotMinecraftDirectory)
-				.getProfiles()
-				.values()
-				.stream()
-				.map(p -> new UnresolvedLauncherProfile(dotMinecraftDirectory, p))
-				.collect(Collectors.toList());
+		if (remoteUrl == null)
+			return dotMinecraftDirectoryService
+					.readLauncherProfilesFrom(dotMinecraftDirectory)
+					.getProfiles()
+					.values()
+					.stream()
+					.map(p -> new UnresolvedLauncherProfile(dotMinecraftDirectory, p))
+					.collect(Collectors.toList());
+		return Collections.emptyList();
 	}
 
 	public LauncherProfile newLauncherProfile(String versionId) throws FormatException, IOException {

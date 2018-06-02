@@ -1,15 +1,19 @@
 package amidst.mojangapi.file;
 
-import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URLClassLoader;
-
 import amidst.documentation.Immutable;
 import amidst.mojangapi.file.directory.DotMinecraftDirectory;
 import amidst.mojangapi.file.directory.ProfileDirectory;
 import amidst.mojangapi.file.directory.VersionDirectory;
 import amidst.mojangapi.file.json.version.VersionJson;
 import amidst.mojangapi.file.service.ClassLoaderService;
+import amidst.parsing.FormatException;
+import amidst.parsing.json.JsonReader;
+import amidst.settings.biomeprofile.BiomeProfileSelection;
+
+import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URLClassLoader;
+import java.util.Optional;
 
 @Immutable
 public class LauncherProfile {
@@ -20,6 +24,8 @@ public class LauncherProfile {
 	private final VersionJson versionJson;
 	private final boolean isVersionListedInProfile;
 	private final String profileName;
+	private final String remoteUrl;
+	private final BiomeProfileSelection biomeProfileSelection;
 
 	public LauncherProfile(
 			DotMinecraftDirectory dotMinecraftDirectory,
@@ -34,6 +40,23 @@ public class LauncherProfile {
 		this.versionJson = versionJson;
 		this.isVersionListedInProfile = isVersionListedInProfile;
 		this.profileName = profileName;
+		this.remoteUrl = null;
+		this.biomeProfileSelection = null;
+	}
+
+	public LauncherProfile(String remoteUrl, BiomeProfileSelection biomeProfileSelection) {
+		this.biomeProfileSelection = biomeProfileSelection;
+		this.dotMinecraftDirectory = null;
+		this.profileDirectory = null;
+		this.versionDirectory = null;
+		try {
+			versionJson = JsonReader.readString("{\"id\":\"REMOTE\"}", VersionJson.class);
+		} catch (FormatException e) {
+			throw new RuntimeException(e);
+		}
+		this.isVersionListedInProfile = false;
+		this.profileName = "Remote connection to "+ remoteUrl;
+		this.remoteUrl = remoteUrl;
 	}
 
 	public String getVersionId() {
@@ -73,10 +96,22 @@ public class LauncherProfile {
 		return profileDirectory.getSaves();
 	}
 
+	public String getRemoteUrl() {
+		return remoteUrl;
+	}
+
+	public BiomeProfileSelection getBiomeProfileSelection() {
+		return biomeProfileSelection;
+	}
+
 	public URLClassLoader newClassLoader() throws MalformedURLException {
 		return classLoaderService.createClassLoader(
 				dotMinecraftDirectory.getLibraries(),
 				versionJson.getLibraries(),
 				versionDirectory.getJar());
+	}
+
+	public static Optional<LauncherProfile> newRemoteLauncherProfile(String remoteUrl, BiomeProfileSelection biomeProfileSelection) {
+		return Optional.of(new LauncherProfile(remoteUrl, biomeProfileSelection));
 	}
 }
