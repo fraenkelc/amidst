@@ -12,6 +12,7 @@ import amidst.mojangapi.minecraftinterface.MinecraftInterfaceCreationException;
 import amidst.mojangapi.minecraftinterface.MinecraftInterfaceException;
 import amidst.mojangapi.minecraftinterface.MinecraftInterfaces;
 import amidst.mojangapi.minecraftinterface.RecognisedVersion;
+import amidst.mojangapi.minecraftinterface.remote.RemoteMinecraftInterface;
 import amidst.mojangapi.world.World;
 import amidst.mojangapi.world.WorldBuilder;
 import amidst.mojangapi.world.WorldOptions;
@@ -20,10 +21,16 @@ import amidst.mojangapi.world.WorldOptions;
 public class RunningLauncherProfile {
 	public static RunningLauncherProfile from(WorldBuilder worldBuilder, LauncherProfile launcherProfile, Optional<WorldOptions> initialWorldOptions)
 			throws MinecraftInterfaceCreationException {
+		MinecraftInterface minecraftInterface;
+		if (launcherProfile.getRemoteUrl() == null)
+			minecraftInterface = new LoggingMinecraftInterface(MinecraftInterfaces.fromLocalProfile(launcherProfile));
+		else
+			minecraftInterface = new LoggingMinecraftInterface(RemoteMinecraftInterface.createRemoteMinecraftInterface(launcherProfile.getRemoteUrl(), launcherProfile.getBiomeProfileSelection()));
 		return new RunningLauncherProfile(
 				worldBuilder,
 				launcherProfile,
-				new LoggingMinecraftInterface(MinecraftInterfaces.fromLocalProfile(launcherProfile)), initialWorldOptions);
+				minecraftInterface, initialWorldOptions);
+
 	}
 
 	private final WorldBuilder worldBuilder;

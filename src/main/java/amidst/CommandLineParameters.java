@@ -107,6 +107,9 @@ public class CommandLineParameters {
 	    usage = "print version"
 	)
 	public volatile boolean printVersion;
+
+	@Option(name = "-remote",                 usage = "host and port of amidst-forge remote instance",      metaVar = "<host>:<port>")
+	public volatile String remoteUrl;
 	// @formatter:on
 
 	public Optional<WorldOptions> getInitialWorldOptions() {

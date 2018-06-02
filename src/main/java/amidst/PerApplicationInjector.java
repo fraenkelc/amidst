@@ -19,6 +19,7 @@ import amidst.gui.main.viewer.PerViewerFacadeInjector;
 import amidst.gui.main.viewer.ViewerFacade;
 import amidst.gui.main.viewer.Zoom;
 import amidst.gui.profileselect.ProfileSelectWindow;
+import amidst.logging.AmidstLogger;
 import amidst.mojangapi.LauncherProfileRunner;
 import amidst.mojangapi.RunningLauncherProfile;
 import amidst.mojangapi.file.DotMinecraftDirectoryNotFoundException;
@@ -27,6 +28,7 @@ import amidst.mojangapi.file.MinecraftInstallation;
 import amidst.mojangapi.file.PlayerInformationCache;
 import amidst.mojangapi.file.PlayerInformationProvider;
 import amidst.mojangapi.file.VersionListProvider;
+import amidst.mojangapi.minecraftinterface.MinecraftInterface;
 import amidst.mojangapi.world.SeedHistoryLogger;
 import amidst.mojangapi.world.World;
 import amidst.mojangapi.world.WorldBuilder;
@@ -61,9 +63,12 @@ public class PerApplicationInjector {
 		this.settings = settings;
 		this.playerInformationProvider = new PlayerInformationCache();
 		this.seedHistoryLogger = SeedHistoryLogger.from(parameters.seedHistoryFile);
-		this.minecraftInstallation = MinecraftInstallation
+		if (parameters.remoteUrl != null)
+			this.minecraftInstallation = MinecraftInstallation.newRemoteMinecraftInstallation(parameters.remoteUrl);
+		else
+			this.minecraftInstallation = MinecraftInstallation
 				.newLocalMinecraftInstallation(parameters.dotMinecraftDirectory);
-		this.preferredLauncherProfile = parameters.getInitialLauncherProfile(minecraftInstallation);
+		this.preferredLauncherProfile = getPreferredLauncherProfile(parameters, settings);
 		this.worldBuilder = new WorldBuilder(playerInformationProvider, seedHistoryLogger);
 		this.launcherProfileRunner = new LauncherProfileRunner(worldBuilder, parameters.getInitialWorldOptions());
 		this.biomeProfileDirectory = BiomeProfileDirectory.create(parameters.biomeProfilesDirectory);
@@ -81,6 +86,13 @@ public class PerApplicationInjector {
 				this::createMainWindow,
 				this::createProfileSelectWindow,
 				this::createLicenseWindow);
+	}
+
+	private Optional<LauncherProfile> getPreferredLauncherProfile(CommandLineParameters parameters, AmidstSettings settings) {
+		if (parameters.remoteUrl == null)
+			return parameters.getInitialLauncherProfile(minecraftInstallation);
+		else
+			return LauncherProfile.newRemoteLauncherProfile(parameters.remoteUrl, settings.biomeProfileSelection);
 	}
 
 	@CalledOnlyBy(AmidstThread.EDT)
