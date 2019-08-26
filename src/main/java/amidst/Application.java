@@ -62,12 +62,14 @@ public class Application {
 
 	@CalledOnlyBy(AmidstThread.EDT)
 	public void checkForUpdates(MainWindowDialogs dialogs) {
-		noisyUpdatePromptFactory.create(dialogs).check();
+		// disable update prompts - we ship a fixed amidst version
+		// noisyUpdatePromptFactory.create(dialogs).check();
 	}
 
 	@CalledOnlyBy(AmidstThread.EDT)
 	public void checkForUpdatesSilently() {
-		silentUpdatePromptFactory.create().check();
+		// disable update prompts - we ship a fixed amidst version
+		// silentUpdatePromptFactory.create().check();
 	}
 
 	@CalledOnlyBy(AmidstThread.EDT)
