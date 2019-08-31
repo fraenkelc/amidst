@@ -1,5 +1,9 @@
 package amidst.mojangapi.minecraftinterface.remote;
 
+import java.util.Random;
+
+import org.agrona.DirectBuffer;
+
 import amidst.mojangapi.minecraftinterface.MinecraftInterface;
 import amidst.mojangapi.minecraftinterface.MinecraftInterfaceException;
 import amidst.mojangapi.minecraftinterface.RecognisedVersion;
@@ -8,19 +12,22 @@ import amidst.mojangapi.world.WorldType;
 import amidst.mojangapi.world.biome.BiomeColor;
 import amidst.mojangapi.world.biome.BiomeType;
 import amidst.mojangapi.world.biome.UnknownBiomeIndexException;
-import amidst.remote.*;
 import amidst.settings.biomeprofile.BiomeProfile;
 import amidst.settings.biomeprofile.BiomeProfileSelection;
-import com.google.flatbuffers.FlatBufferBuilder;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-
-import java.util.Random;
+import io.aeron.Aeron;
+import io.aeron.Aeron.Context;
+import io.aeron.FragmentAssembler;
+import io.aeron.Image;
+import io.aeron.Publication;
+import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.Header;
+import net.lessqq.amidstforge.Constants;
 
 public class RemoteMinecraftInterface implements MinecraftInterface {
 
 	private final BiomeProfileSelection biomeProfileSelection;
-	private AmidstInterfaceGrpc.AmidstInterfaceBlockingStub remoteInterface;
+    private Context context;
+    private Publication publication;
 
 	public static MinecraftInterface createRemoteMinecraftInterface(String remoteUrl, BiomeProfileSelection biomeProfileSelection) throws LocalMinecraftInterfaceCreationException {
 		return new RemoteMinecraftInterface(remoteUrl, biomeProfileSelection);
@@ -28,10 +35,23 @@ public class RemoteMinecraftInterface implements MinecraftInterface {
 
 	public RemoteMinecraftInterface(String remoteUrl, BiomeProfileSelection biomeProfileSelection) {
 		this.biomeProfileSelection = biomeProfileSelection;
-		ManagedChannel channel = ManagedChannelBuilder.forTarget(remoteUrl).usePlaintext(true).build();
-		remoteInterface = AmidstInterfaceGrpc.newBlockingStub(channel);
+        context = new Context().aeronDirectoryName(remoteUrl);
+        context.availableImageHandler(this::onAvailableImage);
+        final Aeron aeron = Aeron.connect(context);
+        
+        aeron.addSubscription("aeron:ipc", Constants.RESPONSE_STREAM_ID);
+        publication = aeron.addPublication("aeron:ipc", Constants.REQUEST_STREAM_ID);
 	}
 
+	
+    public void onAvailableImage(Image image) {
+        FragmentHandler reassemblingFragmentHandler = new FragmentAssembler(this::onFragment);
+        image.poll(reassemblingFragmentHandler, 100);
+    }
+
+    private void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
+    }
+    
 	@Override
 	public int[] getBiomeData(int x, int y, int width, int height, boolean useQuarterResolution) throws MinecraftInterfaceException {
 		FlatBufferBuilder builder = new FlatBufferBuilder();
