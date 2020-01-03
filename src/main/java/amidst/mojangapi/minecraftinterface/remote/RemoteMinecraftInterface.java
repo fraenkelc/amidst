@@ -28,7 +28,7 @@ public class RemoteMinecraftInterface implements MinecraftInterface {
 
 	public RemoteMinecraftInterface(String remoteUrl, BiomeProfileSelection biomeProfileSelection) {
 		this.biomeProfileSelection = biomeProfileSelection;
-		ManagedChannel channel = ManagedChannelBuilder.forTarget(remoteUrl).usePlaintext(true).build();
+		ManagedChannel channel = ManagedChannelBuilder.forTarget(remoteUrl).usePlaintext().build();
 		remoteInterface = AmidstInterfaceGrpc.newBlockingStub(channel);
 	}
 
