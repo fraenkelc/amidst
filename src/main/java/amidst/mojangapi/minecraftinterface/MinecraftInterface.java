@@ -2,6 +2,9 @@ package amidst.mojangapi.minecraftinterface;
 
 import amidst.documentation.ThreadSafe;
 import amidst.mojangapi.world.WorldType;
+import amidst.mojangapi.world.biome.BiomeList;
+import amidst.mojangapi.world.versionfeatures.DefaultBiomes;
+import amidst.mojangapi.world.versionfeatures.VersionFeature;
 
 /**
  * Acts as an additional layer of abstraction for interfacing with Minecraft.
@@ -37,4 +40,8 @@ public interface MinecraftInterface {
 	public void createWorld(long seed, WorldType worldType, String generatorOptions) throws MinecraftInterfaceException;
 
 	public RecognisedVersion getRecognisedVersion();
+
+	default VersionFeature<BiomeList> getBiomeListVersionFeature() {
+		return DefaultBiomes.DEFAULT_BIOMES;
+	}
 }

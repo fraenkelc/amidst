@@ -114,7 +114,9 @@ public enum DefaultVersionFeatures {
 					LayerIds.OCEAN_FEATURES
 				).construct())
 
-			.with(FeatureKey.BIOME_LIST, DefaultBiomes.DEFAULT_BIOMES)
+			.with(FeatureKey.BIOME_LIST, VersionFeature.bind(features ->
+					features.get(MINECRAFT_INTERFACE).getBiomeListVersionFeature()
+			))
 			.with(FeatureKey.END_ISLAND_ORACLE, VersionFeature.bind(features ->
 				VersionFeature.constant(EndIslandOracle.from(getWorldSeed(features)))
 			))
