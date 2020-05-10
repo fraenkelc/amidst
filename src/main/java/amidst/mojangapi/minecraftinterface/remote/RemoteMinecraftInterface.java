@@ -6,8 +6,9 @@ import amidst.mojangapi.minecraftinterface.MinecraftInterfaceException;
 import amidst.mojangapi.minecraftinterface.RecognisedVersion;
 import amidst.mojangapi.world.WorldType;
 import amidst.mojangapi.world.biome.BiomeColor;
+import amidst.mojangapi.world.biome.BiomeList;
 import amidst.mojangapi.world.biome.BiomeType;
-import amidst.mojangapi.world.biome.UnknownBiomeIndexException;
+import amidst.mojangapi.world.versionfeatures.VersionFeature;
 import amidst.remote.AmidstRemoteClient;
 import amidst.remote.BiomeDataRequest;
 import amidst.remote.BiomeEntry;
@@ -48,20 +49,6 @@ public class RemoteMinecraftInterface implements MinecraftInterface {
     @Override
     public void createWorld(long seed, WorldType worldType, String generatorOptions) throws MinecraftInterfaceException {
         remoteInterface.createNewWorld(seed, mapWorldType(worldType), generatorOptions, r -> "");
-
-        // now load the biome list from the remote instance and adjust ours accordingly
-        Random colors = new Random();
-        remoteInterface.getBiomeList(biomeList -> {
-            BiomeEntry entry = new BiomeEntry();
-            for (int i = 0; i < biomeList.biomesLength(); i++) {
-                entry = biomeList.biomes(entry, i);
-                maybeAddBiome(colors, entry);
-            }
-            return "";
-        });
-        // regenerate the biome colors. required to avoid UnknownBiomeIndexExceptions
-        biomeProfileSelection.set(BiomeProfile.getDefaultProfile());
-
     }
 
     private String mapWorldType(WorldType worldType) {
@@ -81,15 +68,28 @@ public class RemoteMinecraftInterface implements MinecraftInterface {
         }
     }
 
-    private void maybeAddBiome(Random random, BiomeEntry b) {
-        try {
-            amidst.mojangapi.world.biome.Biome.getByIndex(b.biomeId());
-        } catch (UnknownBiomeIndexException e) {
-            // this constructor call has side effects.
-            new amidst.mojangapi.world.biome.Biome(b.biomeName(), b.biomeId(), BiomeColor.from(random.nextInt(255), random.nextInt(255), random.nextInt(255)), BiomeType.OCEAN);
-        }
-    }
+    @Override
+    public VersionFeature<BiomeList> getBiomeListVersionFeature() {
+        BiomeList biomeList = new BiomeList();
 
+        // map the remote biomes to a local BiomeList
+        Random colors = new Random();
+        remoteInterface.getBiomeList(rBiomeList -> {
+            BiomeEntry entry = new BiomeEntry();
+            for (int i = 0; i < rBiomeList.biomesLength(); i++) {
+                entry = rBiomeList.biomes(entry, i);
+                biomeList.add(new amidst.mojangapi.world.biome.Biome(entry.biomeId(), entry.biomeName(), BiomeType.OCEAN));
+
+            }
+            return "";
+        });
+        // regenerate the biome colors. required to avoid UnknownBiomeIndexExceptions
+        BiomeColor.from(colors.nextInt(255), colors.nextInt(255), colors.nextInt(255));
+        biomeProfileSelection.set(BiomeProfile.getDefaultProfile());
+
+
+        return VersionFeature.constant(BiomeList.construct(biomeList));
+    }
 
     @Override
     public RecognisedVersion getRecognisedVersion() {
